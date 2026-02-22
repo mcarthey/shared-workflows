@@ -32,6 +32,10 @@ concurrency:
 jobs:
   ci:
     uses: mcarthey/shared-workflows/.github/workflows/dotnet-ci-reusable.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
     with:
       solution-filter: "MyProject.CI.slnf"
       maui-project: "MyProject.App/MyProject.App.csproj"
@@ -59,6 +63,17 @@ jobs:
 | `codecov-enabled` | No | `false` | Upload coverage to Codecov |
 | `test-timeout-minutes` | No | `15` | Timeout for build & test job |
 | `maui-timeout-minutes` | No | `30` | Timeout for MAUI build job |
+
+#### Caller Permissions
+
+The caller must grant permissions that the reusable workflow's jobs need. Repos with `default_workflow_permissions=read` (recommended) will get `startup_failure` without these:
+
+```yaml
+permissions:
+  contents: read        # for checkout
+  pull-requests: write  # for PR test summary
+  checks: write         # for PR test summary
+```
 
 #### Prerequisites
 

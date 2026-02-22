@@ -16,6 +16,14 @@
 #         smoke-test-cwd: "MyProject.Api"
 #         smoke-test-env: "Jwt__Secret=CI-Key-32-Chars-Minimum-For-HMAC!"
 #       secrets: inherit
+#
+# IMPORTANT — Caller permissions:
+#   The caller must grant permissions that this workflow's jobs need.
+#   Repos with default_workflow_permissions=read (recommended) require:
+#     permissions:
+#       contents: read
+#       pull-requests: write   # for pr-summary job
+#       checks: write          # for pr-summary job
 
 name: .NET CI (Reusable)
 
@@ -84,7 +92,8 @@ jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.test-timeout-minutes }}
+    # fromJSON required: type=number inputs arrive as strings in expressions
+    timeout-minutes: ${{ fromJSON(inputs.test-timeout-minutes) }}
     permissions:
       contents: read
 
@@ -176,7 +185,7 @@ jobs:
   build-maui:
     name: Build MAUI (compile check)
     runs-on: ${{ inputs.maui-runner }}
-    timeout-minutes: ${{ inputs.maui-timeout-minutes }}
+    timeout-minutes: ${{ fromJSON(inputs.maui-timeout-minutes) }}
     if: >-
       inputs.maui-project != '' &&
       (github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
@@ -205,17 +214,20 @@ jobs:
 
       - name: Restore & Build MAUI
         run: |
-          # Pass -p:TargetFramework to restore only the target we build.
-          # Without this, restore resolves ALL target frameworks (including
-          # net9.0-windows) which fails on non-Windows runners (NETSDK1100).
+          # Restore with EnableWindowsTargeting so all TFMs resolve on macOS
+          # (suppresses NETSDK1100 for net9.0-windows without affecting build).
+          # Then build with -f to compile only the target framework we want.
+          # Do NOT use -p:TargetFramework on restore — it's a global property
+          # that overrides ALL projects in the graph including transitive
+          # net9.0 deps, corrupting their assets.json (NETSDK1005).
           if [ -n "${{ inputs.maui-ui-project }}" ]; then
             dotnet restore ${{ inputs.maui-ui-project }} \
-              -p:TargetFramework=${{ inputs.maui-target-framework }}
+              -p:EnableWindowsTargeting=true
             dotnet build ${{ inputs.maui-ui-project }} \
               --no-restore -c Release -f ${{ inputs.maui-target-framework }}
           fi
           dotnet restore ${{ inputs.maui-project }} \
-            -p:TargetFramework=${{ inputs.maui-target-framework }}
+            -p:EnableWindowsTargeting=true
           dotnet build ${{ inputs.maui-project }} \
             --no-restore -c Release -f ${{ inputs.maui-target-framework }}
 
