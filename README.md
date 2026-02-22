@@ -8,8 +8,8 @@ Shared GitHub Actions workflows for [mcarthey](https://github.com/mcarthey) proj
 
 A reusable CI workflow for .NET MAUI + API projects. Provides three jobs:
 
-1. **Build & Test** — Restore, build, test with coverage, optional smoke test
-2. **Build MAUI** — Compile check for MAUI projects (conditional, macOS runner)
+1. **Build & Test** — Restore, build, test with coverage, optional smoke test, optional Codecov
+2. **Build MAUI** — Compile check for MAUI projects (conditional, configurable runner)
 3. **PR Summary** — Publish test results as a PR comment (conditional, PRs only)
 
 #### Usage
@@ -53,14 +53,18 @@ jobs:
 | `solution-filter` | **Yes** | — | Solution filter (`.slnf`) for build & test |
 | `dotnet-version` | No | `9.0.x` | .NET SDK version |
 | `test-settings` | No | `./coverage.runsettings` | Path to coverage runsettings file |
+| `node-version` | No | `""` | Node.js version to install (skip if empty) |
+| `pre-build-script` | No | `""` | Shell script to run before restore (e.g., Tailwind CSS) |
 | `maui-project` | No | `""` | MAUI App `.csproj` path (skip MAUI job if empty) |
 | `maui-ui-project` | No | `""` | MAUI UI `.csproj` path (skip if empty) |
 | `maui-runner` | No | `macos-15` | Runner for MAUI build |
 | `maui-target-framework` | No | `net9.0-android` | Target framework for MAUI compile check |
+| `maui-workload` | No | `maui` | MAUI workload to install (`maui`, `maui-android`, etc.) |
+| `maui-pre-build-script` | No | `""` | Shell script to run in MAUI job before build |
 | `smoke-test-url` | No | `""` | Health check URL (skip smoke test if empty) |
 | `smoke-test-cwd` | No | `""` | Working directory for smoke test |
 | `smoke-test-env` | No | `""` | Space-separated `KEY=VALUE` env vars for smoke test |
-| `codecov-enabled` | No | `false` | Upload coverage to Codecov |
+| `codecov-enabled` | No | `false` | Upload coverage to Codecov (requires `CODECOV_TOKEN` secret) |
 | `test-timeout-minutes` | No | `15` | Timeout for build & test job |
 | `maui-timeout-minutes` | No | `30` | Timeout for MAUI build job |
 
@@ -74,6 +78,12 @@ permissions:
   pull-requests: write  # for PR test summary
   checks: write         # for PR test summary
 ```
+
+#### Codecov
+
+Set `codecov-enabled: true` and add `CODECOV_TOKEN` to your repository secrets. The workflow uploads both coverage data and test analytics.
+
+Test projects that want Codecov test analytics need the `JunitXml.TestLogger` NuGet package (the junit logger is only added when `codecov-enabled` is true).
 
 #### Prerequisites
 
@@ -92,3 +102,4 @@ Based on [Anatomy of a CI Workflow](https://learnedgeek.com/Blog/Post/anatomy-of
 - **Concurrency** with cancel-in-progress (configured in caller)
 - **Conditional MAUI builds** (main + PRs only, to control macOS runner costs)
 - **Artifact retention** at 14 days
+- **Opt-in inputs** for project-specific needs (Node.js, Tailwind, Codecov)
