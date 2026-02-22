@@ -1,6 +1,6 @@
-# .github
+# shared-workflows
 
-Shared GitHub Actions workflows and organization defaults for [mcarthey](https://github.com/mcarthey) projects.
+Shared GitHub Actions workflows for [mcarthey](https://github.com/mcarthey) projects.
 
 ## Reusable Workflows
 
@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: mcarthey/.github/.github/workflows/dotnet-ci-reusable.yml@main
+    uses: mcarthey/shared-workflows/.github/workflows/dotnet-ci-reusable.yml@main
     with:
       solution-filter: "MyProject.CI.slnf"
       maui-project: "MyProject.App/MyProject.App.csproj"
